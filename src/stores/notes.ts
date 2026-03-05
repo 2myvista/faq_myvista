@@ -1,7 +1,8 @@
 // src/stores/notes.ts (упрощенный)
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import GitHubService from '../services/githubService'
+//import GitHubService from '../services/githubService'
+import { GitHubService }  from '../services/githubServiceFactory'
 import type { TreeItem, FolderItem, FileItem } from '../types/treeItem'
 import { decodeBase64 } from '../utils/base64'
 
@@ -19,13 +20,8 @@ export const useNotesStore = defineStore('notes', () => {
   })
 
   // === GETTERS ===
-  const githubService = computed(() => 
-    new GitHubService(
-      githubConfig.value.owner,
-      githubConfig.value.repo,
-      githubConfig.value.token
-    )
-  )
+  const githubService = GitHubService()
+  
 
   const allFiles = computed(() => {
     const files: FileItem[] = []
@@ -132,7 +128,7 @@ export const useNotesStore = defineStore('notes', () => {
 
   // === ACTIONS ===
   async function loadStructure(path: string = ''): Promise<TreeItem[]> {
-    const contents = await githubService.value.getFolderContents(path)
+    const contents = await githubService.getFolderContents(path)
     const structure: TreeItem[] = []
     
     for (const item of contents) {
@@ -147,7 +143,7 @@ export const useNotesStore = defineStore('notes', () => {
         }
         structure.push(folder)
       } else if (item.type === 'file' && item.name.endsWith('.md')) {
-        const fileData = await githubService.value.getFileContent(item.path)
+        const fileData = await githubService.getFileContent(item.path)
         
         let content = ''
         let tags: string[] = []
