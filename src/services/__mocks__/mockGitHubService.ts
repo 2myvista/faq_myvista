@@ -32,6 +32,11 @@ const mockFolderContents: Record<string, MockFolderContent[]> = {
       name: 'pim',
       path: 'pim',
       type: 'dir'
+    },
+    {
+      name: 'git',
+      path: 'git',
+      type: 'dir'
     }
   ],
   'obsidian': [
@@ -57,6 +62,13 @@ const mockFolderContents: Record<string, MockFolderContent[]> = {
       path: 'pim/pgAdmin.md',
       type: 'file'
     }
+  ],
+  'git': [
+    {
+      name: 'git история переключений git.md',
+      path: 'git/git история переключений git.md',
+      type: 'file'
+    },
   ]
 }
 
@@ -118,7 +130,7 @@ kubectl get pods
 kubectl logs -f deployment/pim
 \`\`\`
 
-#pim/deploy #devops/kubernetes #devops/docker`),
+#pim/deploy #pim/database #obsidian/postgresql #obsidian/admin #pim/bash #pim/script  #pim/linux #devops/kubernetes #devops/docker #devops/docker55`),
     encoding: 'base64',
     sha: 'mock-sha-deploy-003'
   },
@@ -141,6 +153,20 @@ SELECT * FROM categories;
 #pim/database #postgresql #admin`),
     encoding: 'base64',
     sha: 'mock-sha-pgadmin-004'
+  },
+  
+  'git/git история переключений git.md': {
+    content: encodeToBase64(`команда покажет историю всех операций с HEAD (переключения веток, коммиты, rebase, merge и т.д.) в обратном хронологическом порядке.
+
+также можно увидеть из какой ветки создана та либо иная ветка
+\`\`\`bash
+git reflog --date=format:'%d-%m-%Y' | grep "checkout: moving" | head -20
+\`\`\`
+
+
+#git/движение #git/reflog #git/история #git/log`),
+    encoding: 'base64',
+    sha: 'git-reflog-005'
   }
 }
 

@@ -212,7 +212,7 @@ function handleSearchInput(): void {
 }
 
 .search-tab.active {
-	background: #3498db;
+	background: #13222c;
 	color: white;
 }
 

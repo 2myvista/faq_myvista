@@ -6,8 +6,8 @@
         :class="['item-content', { 'selected': isSelected(item) }]"
         @click="handleItemClick(item)"
       >
-        <div v-if="isFolder(item)" class="folder-item">
-          <span class="folder-icon" @click="toggleFolder(item)">
+        <div v-if="isFolder(item)" class="folder-item" @click="toggleFolder(item)">
+          <span class="folder-icon">
             {{ item.isOpen ? '📂' : '📁' }}
           </span>
           <span class="item-name">{{ item.name }}</span>

@@ -1,68 +1,64 @@
 <!-- src/components/FilePreview.vue -->
 <template>
-  <div class="file-preview">
-    <div v-if="!file" class="no-file">
-      <p>Выберите файл для просмотра</p>
-    </div>
-    
-    <div v-else class="preview-content">
-      <!-- Теги файла -->
-      <div class="file-tags-section">
-        <h4>Теги файла ({{ file.tags.length }}):</h4>
-        <div class="tags-list">
-          <span
-            v-for="tag in file.tags"
-            :key="tag"
-            class="tag"
-            @click="$emit('tag-click', tag)"
-            :title="tag"
-          >
-            #{{ tag }}
-          </span>
-        </div>
-      </div>
-      
-      <!-- Группированные теги -->
-      <div 
-        v-for="(groupTags, groupName) in file.groupedTags" 
-        :key="groupName"
-        class="tag-group"
-      >
-        <h5>{{ groupName }}:</h5>
-        <div class="group-tags">
-          <span
-            v-for="tag in groupTags"
-            :key="tag.full"
-            class="group-tag"
-            @click="$emit('tag-click', tag.full)"
-            :title="tag.full"
-          >
-            {{ tag.display }}
-          </span>
-        </div>
-      </div>
-      
-      <!-- Контент файла -->
-      <div class="file-content-section">
-        <div class="content-header">
-          <h4>Содержимое:</h4>
-          <button 
-            @click="showRaw = !showRaw" 
-            class="view-toggle"
-          >
-            {{ showRaw ? 'Просмотр' : 'Исходник' }}
-          </button>
-        </div>
-        
-        <div v-if="showRaw" class="raw-content">
-          <pre>{{ file.content }}</pre>
-        </div>
-        <div v-else class="rendered-content">
-          <pre class="markdown-content">{{ file.content }}</pre>
-        </div>
-      </div>
-    </div>
-  </div>
+<div v-if="selectedFile" class="file-content-panel">
+		<div class="content-header">
+			<h2>{{ selectedFile.name }}</h2>
+			<div class="content-actions">
+				<button @click="emit('close-file')" class="close-btn">
+					× Закрыть
+				</button>
+			</div>
+		</div>
+		<!-- Содержимое файла -->
+		<div class="file-content">
+			<div class="content-toolbar">
+				<button @click="viewMode = viewMode === 'preview' ? 'raw' : 'preview'" class="view-toggle">
+					{{ viewMode === 'preview' ? '📝 Исходник' : '👁️ Просмотр' }}
+				</button>
+			</div>
+
+			<div v-if="viewMode === 'raw'" class="raw-content">
+				<pre>{{ selectedFile.content }}</pre>
+			</div>
+			<div v-else class="preview-content">
+				<pre class="markdown-content">{{ selectedFile.content }}</pre>
+			</div>
+		</div>
+
+		<!-- Теги файла -->
+		<div class="file-tags-section">
+			<!-- <h3>Теги файла:</h3> -->
+			<div class="tags-list">
+				<span v-for="tag in selectedFile.tags" :key="tag" class="tag" @click="emit('tag-click',tag)" :title="tag">
+					#{{ tag }}
+				</span>
+			</div>
+
+			<!-- Группированные теги -->
+			<!-- <div v-for="(groupTags, groupName) in selectedFile.groupedTags" :key="groupName" class="tag-group">
+				<h4>{{ groupName }}:</h4>
+				<div class="group-tags">
+					<span v-for="tag in groupTags" :key="tag.full" class="group-tag" @click="emit('tag-click', tag.full)"
+						:title="tag.full">
+						{{ tag.display }}
+					</span>
+				</div>
+			</div> -->
+		</div>
+
+	</div>
+<!-- Если файл не выбран - показываем информационное сообщение -->
+	<div v-else class="empty-content">
+		<div class="empty-message">
+			<div v-if="isLoading" class="loading-files">
+				Загрузка...
+			</div>
+			<div v-else>
+				<h3>Заметка не выбрана</h3>
+				<p>Нажмите на любой файл -></p>
+			</div>
+		</div>
+	</div>	
 </template>
 
 <script setup lang="ts">
@@ -70,150 +66,208 @@ import { ref } from 'vue'
 import type { FileItem } from '../types/treeItem'
 
 interface Props {
-  file: FileItem | null
+	selectedFile: FileItem | null
+  	isLoading: boolean
 }
 
 defineProps<Props>()
 
-defineEmits<{
-  (e: 'tag-click', tag: string): void
+const emit = defineEmits<{
+	(e: 'close-file'): void
+  	(e: 'tag-click', tag: string): void
+
 }>()
 
-const showRaw = ref(false)
+const viewMode = ref<'preview' | 'raw'>('preview')
+//const showRaw = ref(false)
 </script>
 
 <style scoped>
-.file-preview {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1rem;
-}
-
-.no-file {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: #6c757d;
-  font-style: italic;
-}
-
-.preview-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.file-tags-section h4,
-.tag-group h5,
-.content-header h4 {
-  margin: 0 0 0.5rem 0;
-  font-size: 14px;
-  color: #495057;
-}
-
-.tags-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.tag {
-  padding: 0.25rem 0.75rem;
-  background: #007bff;
-  color: white;
-  border-radius: 15px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.tag:hover {
-  background: #0056b3;
-}
-
-.tag-group {
-  background: #f8f9fa;
-  padding: 1rem;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
-}
-
-.group-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.group-tag {
-  padding: 0.25rem 0.5rem;
-  background: white;
-  color: #495057;
-  border: 1px solid #dee2e6;
-  border-radius: 12px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.group-tag:hover {
-  background: #e9ecef;
-  border-color: #ced4da;
-}
-
-.file-content-section {
-  background: white;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-  overflow: hidden;
+.file-content-panel {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
 }
 
 .content-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  background: #f8f9fa;
-  border-bottom: 1px solid #dee2e6;
+	padding: 1rem;
+	border-bottom: 1px solid #dee2e6;
+	background: #f0f1f1;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	height: 35px;
+}
+
+.content-header h2 {
+	margin: 0;
+	font-size: 1.25rem;
+	color: #2c3e50;
+}
+
+.content-actions {
+	display: flex;
+	gap: 0.5rem;
+}
+
+.close-btn {
+	padding: 0.5rem 1rem;
+	border: none;
+	background: #e74c3c;
+	color: white;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 0.9rem;
+}
+
+.close-btn:hover {
+	background: #c0392b;
+}
+
+.file-tags-section {
+	padding: 1rem;
+	border-top: 1px solid #dee2e6;
+	overflow: hidden;
+}
+
+.file-tags-section h3 {
+	margin: 0 0 0.5rem 0;
+	font-size: 1rem;
+	color: #2c3e50;
+}
+
+.tags-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-bottom: 1rem;
+}
+
+.tag {
+	padding: 0.25rem 0.75rem;
+	background: #3498db;
+	color: white;
+	border-radius: 15px;
+	font-size: 0.9rem;
+	cursor: pointer;
+}
+
+.tag:hover {
+	background: #2980b9;
+}
+
+.tag-group {
+	margin-bottom: 1rem;
+}
+
+.tag-group h4 {
+	margin: 0 0 0.5rem 0;
+	font-size: 0.9rem;
+	color: #6c757d;
+}
+
+.tag-group h4:hover {
+	cursor: progress;
+	color: red;
+}
+
+.group-tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.group-tag {
+	padding: 0.25rem 0.5rem;
+	background: #ecf0f1;
+	color: #2c3e50;
+	border-radius: 12px;
+	font-size: 0.85rem;
+	cursor: pointer;
+}
+
+.group-tag:hover {
+	background: #bdc3c7;
+}
+
+.file-content {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.content-toolbar {
+	padding: 0.5rem 1rem;
+	border-bottom: 1px solid #dee2e6;
+	background: #f8f9fa;
 }
 
 .view-toggle {
-  padding: 0.25rem 0.75rem;
-  background: #6c757d;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
+	padding: 0.5rem 1rem;
+	border: 1px solid #dee2e6;
+	background: white;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 0.9rem;
 }
 
 .view-toggle:hover {
-  background: #545b62;
+	background: #f8f9fa;
 }
 
 .raw-content,
-.rendered-content {
-  padding: 1rem;
-  max-height: 500px;
-  overflow-y: auto;
+.preview-content {
+	flex: 1;
+	overflow-y: auto;
+	padding: 1rem;
 }
 
 .raw-content pre {
-  margin: 0;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 13px;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  color: #333;
+	margin: 0;
+	font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+	font-size: 14px;
+	line-height: 1.5;
+	white-space: pre-wrap;
+	word-wrap: break-word;
 }
 
 .markdown-content {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 14px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  color: #2c3e50;
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	font-size: 16px;
+	line-height: 1.6;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+}
+
+.empty-content {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #6c757d;
+}
+
+.empty-message {
+	text-align: center;
+	max-width: 400px;
+}
+
+.empty-icon {
+	font-size: 48px;
+	margin-bottom: 1rem;
+}
+
+.empty-message h3 {
+	margin: 0 0 0.5rem 0;
+	font-size: 1.5rem;
+	color: #2c3e50;
+}
+
+.empty-message p {
+	margin: 0;
+	font-size: 1rem;
+	line-height: 1.5;
 }
 </style>
