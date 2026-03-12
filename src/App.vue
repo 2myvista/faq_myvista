@@ -318,7 +318,8 @@ function handleSelectItem(item: TreeItem): void {
 }
 
 function handleCloseFile(): void {
-		selectedFile.value = null
+	selectedFile.value = null;
+	notesStore.selectItem(null);
 }
 
 function handleSelectFile(file: FileItem): void {
