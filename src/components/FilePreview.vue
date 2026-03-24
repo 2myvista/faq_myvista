@@ -1,6 +1,7 @@
 <!-- src/components/FilePreview.vue -->
 <template>
-<div v-if="selectedFile" class="file-content-panel">
+	<!-- Если выбран файл - показываем его содержимое -->
+	<div v-if="selectedFile" class="file-content-panel">
 		<div class="content-header">
 			<h2>{{ selectedFile.name }}</h2>
 			<div class="content-actions">
@@ -29,7 +30,8 @@
 		<div class="file-tags-section">
 			<!-- <h3>Теги файла:</h3> -->
 			<div class="tags-list">
-				<span v-for="tag in selectedFile.tags" :key="tag" class="tag" @click="emit('tag-click',tag)" :title="tag">
+				<span v-for="tag in selectedFile.tags" :key="tag" class="tag" @click="emit('tag-click', tag)"
+					:title="tag">
 					#{{ tag }}
 				</span>
 			</div>
@@ -47,7 +49,7 @@
 		</div>
 
 	</div>
-<!-- Если файл не выбран - показываем информационное сообщение -->
+	<!-- Если файл не выбран - показываем информационное сообщение -->
 	<div v-else class="empty-content">
 		<div class="empty-message">
 			<div v-if="isLoading" class="loading-files">
@@ -58,7 +60,7 @@
 				<p>Нажмите на любой файл -></p>
 			</div>
 		</div>
-	</div>	
+	</div>
 </template>
 
 <script setup lang="ts">
@@ -67,15 +69,14 @@ import type { FileItem } from '../types/treeItem'
 
 interface Props {
 	selectedFile: FileItem | null
-  	isLoading: boolean
+	isLoading: boolean
 }
 
 defineProps<Props>()
 
 const emit = defineEmits<{
 	(e: 'close-file'): void
-  	(e: 'tag-click', tag: string): void
-
+	(e: 'tag-click', tag: string): void
 }>()
 
 const viewMode = ref<'preview' | 'raw'>('preview')

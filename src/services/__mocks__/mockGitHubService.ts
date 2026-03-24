@@ -73,8 +73,8 @@ const mockFolderContents: Record<string, MockFolderContent[]> = {
 }
 
 const mockFileContents: Record<string, MockFileData> = {
-  'obsidian/callout.md': {
-    content: encodeToBase64(`# Callout примеры
+	'obsidian/callout.md': {
+		content: encodeToBase64(`# Callout примеры
 
 > [!note] Обычный callout
 > Это пример обычного callout
@@ -86,12 +86,12 @@ const mockFileContents: Record<string, MockFileData> = {
 > Полезный совет
 
 #obsidian/callout #markdown/notes`),
-    encoding: 'base64',
-    sha: 'mock-sha-callout-001'
-  },
-  
-  'obsidian/вставить код.md': {
-    content: encodeToBase64(`# Как вставить код в Obsidian
+		encoding: 'base64',
+		sha: 'mock-sha-callout-001',
+	},
+
+	'obsidian/вставить код.md': {
+		content: encodeToBase64(`# Как вставить код в Obsidian
 
 ## Пример JavaScript
 \`\`\`javascript
@@ -106,13 +106,13 @@ def hello():
     print("Hello, World!")
 \`\`\`
 
-#obsidian/code #programming/javascript #programming/python`),
-    encoding: 'base64',
-    sha: 'mock-sha-code-002'
-  },
-  
-  'pim/deploy pim.md': {
-    content: encodeToBase64(`# Деплой PIM системы
+#obsidian/code #programming/javascript #programming/python  #admin`),
+		encoding: 'base64',
+		sha: 'mock-sha-code-002',
+	},
+
+	'pim/deploy pim.md': {
+		content: encodeToBase64(`# Деплой PIM системы
 
 ## Предварительные требования
 - Docker
@@ -131,12 +131,12 @@ kubectl logs -f deployment/pim
 \`\`\`
 
 #pim/deploy #pim/database #obsidian/postgresql #obsidian/admin #pim/bash #pim/script  #pim/linux #devops/kubernetes #devops/docker #devops/docker55`),
-    encoding: 'base64',
-    sha: 'mock-sha-deploy-003'
-  },
-  
-  'pim/pgAdmin.md': {
-    content: encodeToBase64(`# Настройка pgAdmin для PIM
+		encoding: 'base64',
+		sha: 'mock-sha-deploy-003',
+	},
+
+	'pim/pgAdmin.md': {
+		content: encodeToBase64(`# Настройка pgAdmin для PIM
 
 ## Подключение к базе
 - Host: postgres-service
@@ -150,13 +150,14 @@ SELECT * FROM products;
 SELECT * FROM categories;
 \`\`\`
 
-#pim/database #postgresql #admin`),
-    encoding: 'base64',
-    sha: 'mock-sha-pgadmin-004'
-  },
-  
-  'git/git история переключений git.md': {
-    content: encodeToBase64(`команда покажет историю всех операций с HEAD (переключения веток, коммиты, rebase, merge и т.д.) в обратном хронологическом порядке.
+#pim/database #postgresql #admin #pim/bash `),
+		encoding: 'base64',
+		sha: 'mock-sha-pgadmin-004',
+	},
+
+	'git/git история переключений git.md': {
+		content:
+			encodeToBase64(`команда покажет историю всех операций с HEAD (переключения веток, коммиты, rebase, merge и т.д.) в обратном хронологическом порядке.
 
 также можно увидеть из какой ветки создана та либо иная ветка
 \`\`\`bash
@@ -164,10 +165,10 @@ git reflog --date=format:'%d-%m-%Y' | grep "checkout: moving" | head -20
 \`\`\`
 
 
-#git/движение #git/reflog #git/история #git/log`),
-    encoding: 'base64',
-    sha: 'git-reflog-005'
-  }
+#git/движение #git/reflog #git/история #git/log #admin`),
+		encoding: 'base64',
+		sha: 'git-reflog-005',
+	},
 }
 
 // КЛАСС с методами

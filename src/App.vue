@@ -3,6 +3,8 @@
 	<div class="app">
 		<!-- Шапка -->
 		<HeaderBlock
+			:searchMode="searchMode"
+			v-model:searchQuery="searchQuery"
 			@search="handleSearch"
 			@clear-search="handleClearSearch"
 			@refresh="handleRefresh"
@@ -22,9 +24,7 @@
 
 			<!-- Центральная панель - Основной контент -->
 			<section class="main-content">
-				<!-- Если выбран файл - показываем его содержимое -->
-				<FilePreview :selectedFile="selectedFile" :isLoading="notesStore.isLoading" @close-file="handleCloseFile()" @tag-click="handleTagClick" />
-
+				<FilePreview :selectedFile="selectedFile" :isLoading="notesStore.isLoading" @close-file="handleCloseFile()" @tag-click="handleSelectTag" />
 			</section>
 
 			<!-- Правая панель - Список файлов или теги -->
@@ -94,51 +94,10 @@
 
 				<!-- Если ищем по тегам или показываем теги -->
 				<div v-else class="tags-panel">
-					<!-- Если активен поиск по тегам -->
-					<div v-if="isSearchActive && searchMode === 'tags'" class="search-tags-section">
-						<h4>Результаты поиска тегов ({{ searchTagsResults.length }})</h4>
-						<div class="tag-cloud">
-							<span v-for="tag in searchTagsResults" :key="tag" class="tag-cloud-item"
-								:class="{ 'active': notesStore.selectedTag === tag }" @click="handleSelectTag(tag)"
-								:title="tag">
-								#{{ tag }}
-							</span>
-						</div>
-					</div>
+					<TagCloud :isSearchActive="isSearchActive" :searchMode="searchMode" :searchTagsResults="searchTagsResults" @select-tag="handleSelectTag" />
 
-					<!-- Все теги (если не ищем) -->
-					<div v-else class="tags-section">
-						<div v-if="notesStore.isLoading" class="loading-files">
-							Загрузка...
-						</div>
-						<div v-else>
-							<h4 @click="toggleTags">Все теги ({{ notesStore.allTags.length }})</h4>
-							<div class="tag-cloud" v-if="isTagsActive">
-								<span v-for="tag in notesStore.allTags" :key="tag" class="tag-cloud-item"
-									:class="{ 'active': notesStore.selectedTag === tag }" @click="handleSelectTag(tag)"
-									:title="tag">
-									#{{ tag }}
-								</span>
-							</div>
-						</div>
-					</div>
 
-					<!-- Группированные теги (если не ищем) -->
-					<div v-if="(!isSearchActive || searchMode !== 'tags') && !notesStore.isLoading"
-						class="tag-groups-section">
-						<h4>Группы тегов</h4>
-						<div v-for="(groupTags, groupName) in notesStore.groupedTags" :key="groupName"
-							class="tag-group-section">
-							<h5>{{ groupName }}</h5>
-							<div class="tag-group-items">
-								<span v-for="tag in groupTags" :key="tag.full" class="tag-group-item"
-									:class="{ 'active': notesStore.selectedTag === tag.full }"
-									@click="handleSelectTag(tag.full)" :title="tag.full">
-									{{ tag.display }}
-								</span>
-							</div>
-						</div>
-					</div>
+
 				</div>
 			</aside>
 		</main>
@@ -156,6 +115,7 @@ import HeaderBlock from './components/HeaderBlock.vue'
 import FolderTree from './components/FolderTree.vue'
 import FooterBlock from './components/FooterBlock.vue'
 import FilePreview from "./components/FilePreview.vue";
+import TagCloud from "./components/TagCloud.vue";
 
 // === 1. ИНИЦИАЛИЗАЦИЯ STORE ===
 const notesStore = useNotesStore()
@@ -209,8 +169,9 @@ function handleClearSearch(): void {
 	clearSearch()
 }
 
-function handleRefresh(): void {
-	refreshData()
+function handleRefresh(mode: 'files' | 'tags'): void {
+	refreshData();
+	setSearchMode(mode);
 }
 
 function handleSetSearchMode(mode: 'files' | 'tags'): void {
@@ -221,9 +182,6 @@ function handleSetSearchMode(mode: 'files' | 'tags'): void {
 const isSearchActive = computed(() => {
 	return !!searchQuery.value.trim()
 })
-
-// Теги свернуты?
-const isTagsActive = ref(false);
 
 // Результаты поиска тегов
 const searchTagsResults = computed(() => {
@@ -310,7 +268,10 @@ async function refreshData(): Promise<void> {
 }
 
 function handleSelectItem(item: TreeItem): void {
+
 	if (item.type === 'file') {
+		console.log('выбранный файл', item.name);
+		searchMode.value='files'
 		selectedFile.value = item
 		notesStore.selectItem(item)
 		rightPanelMode.value = 'files'
@@ -320,6 +281,7 @@ function handleSelectItem(item: TreeItem): void {
 function handleCloseFile(): void {
 	selectedFile.value = null;
 	notesStore.selectItem(null);
+	console.log('сбрасываем выбранность файла  в handleCloseFile');
 }
 
 function handleSelectFile(file: FileItem): void {
@@ -332,27 +294,27 @@ function handleSelectTag(tag: string): void {
 	rightPanelMode.value = 'files'
 	searchQuery.value = ''
 	searchMode.value = 'files'
-	selectedFile.value = null
+	unSelectFile();
+	console.log('сбрасываем выбранность файла  в handleSelectTag');
 }
 
-function handleTagClick(tag: string): void {
-	handleSelectTag(tag)
+function unSelectFile(): void {
+	selectedFile.value = null;
+	notesStore.selectItem(null);	
 }
 
 function clearSearch(): void {
-	searchQuery.value = ''
-	notesStore.selectTag(null)
-	selectedFile.value = null
+	searchQuery.value = '';
+	unSelectFile();
 }
 
 function clearTagFilter(): void {
-	notesStore.selectTag(null)
-	searchQuery.value = ''
+	notesStore.selectTag(null);
+	searchQuery.value = '';
 }
 
 function setSearchMode(mode: 'files' | 'tags'): void {
 	searchMode.value = mode
-
 	// Если есть поисковый запрос, сразу выполняем поиск в новом режиме
 	if (searchQuery.value.trim()) {
 		performSearch()
@@ -366,9 +328,6 @@ function isFileSelected(file: FileItem): boolean {
 	return notesStore.currentItem?.path === file.path
 }
 
-function toggleTags(): void {
-	isTagsActive.value = !isTagsActive.value
-}
 
 </script>
 
@@ -722,106 +681,4 @@ function toggleTags(): void {
 	height: calc(100vh - 150px);
 }
 
-.search-tags-section {
-	margin-bottom: 1.5rem;
-}
-
-.search-tags-section h4 {
-	margin: 0 0 0.5rem 0;
-	font-size: 0.9rem;
-	color: #6c757d;
-}
-
-.tags-section {
-	margin-bottom: 1.5rem;
-}
-
-.tags-section h4 {
-	margin: 0 0 0.5rem 0;
-	font-size: 0.9rem;
-	color: #6c757d;
-}
-
-.tags-section h4:hover {
-	color: red;
-	cursor: pointer;
-}
-
-.tag-cloud {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.5rem;
-}
-
-.tag-cloud-item {
-	padding: 0.25rem 0.75rem;
-	background: #e9ecef;
-	color: #495057;
-	border-radius: 15px;
-	font-size: 0.85rem;
-	cursor: pointer;
-}
-
-.tag-cloud-item:hover {
-	background: #dee2e6;
-}
-
-.tag-cloud-item.active {
-	background: #3498db;
-	color: white;
-}
-
-.tag-groups-section {
-	margin-top: 1.5rem;
-}
-
-.tag-groups-section h4 {
-	margin: 0 0 1rem 0;
-	font-size: 0.9rem;
-	color: #6c757d;
-}
-
-.tag-groups-section h4:hover {
-	margin: 0 0 1rem 0;
-	font-size: 0.9rem;
-	color: red;
-	cursor: pointer;
-}
-
-.tag-group-section {
-	margin-bottom: 1rem;
-}
-
-.tag-group-section h5 {
-	margin: 0 0 0.5rem 0;
-	font-size: 0.8rem;
-	color: #495057;
-	font-weight: 600;
-}
-
-.tag-group-items {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.375rem;
-}
-
-.tag-group-item {
-	padding: 0.25rem 0.5rem;
-	background: #f8f9fa;
-	color: #495057;
-	border: 1px solid #dee2e6;
-	border-radius: 12px;
-	font-size: 0.8rem;
-	cursor: pointer;
-}
-
-.tag-group-item:hover {
-	background: #e9ecef;
-}
-
-.tag-group-item.active {
-	background: #27ae60;
-	color: white;
-	border-color: #27ae60;
-}
 </style>

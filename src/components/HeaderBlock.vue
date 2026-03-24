@@ -11,7 +11,7 @@
 				<!-- Строка поиска -->
 				<div class="search-box">
 					<input v-model="localSearchQuery" placeholder="Поиск по названию или тегу..."
-						@input="handleSearchInput" @keyup.enter="performSearch" ref="searchInput" />
+						@keyup.enter="performSearch" ref="searchInput" />
 					<button v-if="localSearchQuery" @click="clearSearch" class="clear-search" title="Очистить поиск">
 						×
 					</button>
@@ -23,11 +23,11 @@
 
 				<!-- Вкладки справа от поиска -->
 				<div class="search-tabs">
-					<button @click="setSearchMode('files')" :class="{ active: localSearchMode === 'files' }"
+					<button @click="setSearchMode('files')" :class="{ active: searchMode === 'files' }"
 						class="search-tab">
 						Файлы
 					</button>
-					<button @click="setSearchMode('tags')" :class="{ active: localSearchMode === 'tags' }"
+					<button @click="setSearchMode('tags')" :class="{ active: searchMode === 'tags' }"
 						class="search-tab">
 						Теги
 					</button>
@@ -45,20 +45,32 @@
 import { ref, watch } from 'vue'
 import { useNotesStore } from '../stores/notes'
 
+interface Props {
+	searchMode: 'files' | 'tags';
+	searchQuery: string;
+}
+const props = defineProps<Props>()
+
 const emit = defineEmits<{
 	(e: 'search', query: string, mode: 'files' | 'tags'): void
 	(e: 'clear-search'): void
-	(e: 'refresh'): void
+	(e: 'refresh', mode: 'files' | 'tags'): void
 	(e: 'set-search-mode', mode: 'files' | 'tags'): void
+	(e: 'update:searchQuery', query: string): void
 }>()
 
 const notesStore = useNotesStore()
 const localSearchQuery = ref('')
-const localSearchMode = ref<'files' | 'tags'>('files')
+
+watch(() => props.searchQuery, (newQuery) => {
+	localSearchQuery.value = newQuery
+}, { immediate: true })
+
 
 // Автопоиск при изменении запроса
 let searchTimeout: number | null = null
 watch(localSearchQuery, (newQuery) => {
+	emit('update:searchQuery', newQuery)
 	if (!newQuery.trim()) {
 		emit('clear-search')
 		return
@@ -70,19 +82,18 @@ watch(localSearchQuery, (newQuery) => {
 
 	searchTimeout = setTimeout(() => {
 		if (newQuery.trim()) {
-			emit('search', localSearchQuery.value, localSearchMode.value)
+			emit('search', newQuery, props.searchMode)
 		}
 	}, 300)
 })
 
 function setSearchMode(mode: 'files' | 'tags'): void {
-	localSearchMode.value = mode
 	emit('set-search-mode', mode)
 }
 
 function performSearch(): void {
 	if (!localSearchQuery.value.trim()) return
-	emit('search', localSearchQuery.value, localSearchMode.value)
+	emit('search', localSearchQuery.value, props.searchMode)
 }
 
 function clearSearch(): void {
@@ -91,14 +102,13 @@ function clearSearch(): void {
 }
 
 function handleRefresh(): void {
-	localSearchQuery.value = ''
-	localSearchMode.value = 'files'
-	emit('refresh')
+	localSearchQuery.value = '';
+	emit('refresh', 'files');
 }
 
-function handleSearchInput(): void {
+/* function handleSearchInput(): void {
 	// Автопоиск через watch
-}
+} */
 </script>
 
 <style scoped>
