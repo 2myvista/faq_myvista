@@ -21,58 +21,54 @@ export interface GitHubFile {
 }
 
 class GitHubService {
-  private owner: string
-  private repo: string
-  private token: string | null
-  private headers: Record<string, string>
+	private owner: string
+	private repo: string
+	private apiUrl = import.meta.env.VITE_API_URL
 
-  constructor(owner: string, repo: string, token: string | null = null) {
-    this.owner = owner
-    this.repo = repo
-    this.token = token
-    
-    this.headers = {
-      'Accept': 'application/vnd.github.v3+json'
-    }
-    
-    if (this.token) {
-      this.headers['Authorization'] = `token ${this.token}`
-    }
-  }
+	constructor(owner: string, repo: string) {
+		this.owner = owner
+		this.repo = repo
 
-  async getFolderContents(path: string = ''): Promise<GitHubFile[]> {
-    try {
-      const encodedPath = encodeURIComponent(path).replace(/%2F/g, '/')
-      const url = `https://api.github.com/repos/${this.owner}/${this.repo}/contents/${encodedPath}`
-      
-      const response = await axios.get<GitHubFile[]>(url, { 
-        headers: this.headers,
-        params: { ref: 'main' }
-      })
-      
-      return response.data
-    } catch (error) {
-      console.error('Error fetching folder contents:', error)
-      return []
-    }
-  }
+	}
 
-  async getFileContent(path: string): Promise<GitHubFile | null> {
-    try {
-      const encodedPath = encodeURIComponent(path).replace(/%2F/g, '/')
-      const url = `https://api.github.com/repos/${this.owner}/${this.repo}/contents/${encodedPath}`
-      
-      const response = await axios.get<GitHubFile>(url, { 
-        headers: this.headers,
-        params: { ref: 'main' }
-      })
-      
-      return response.data
-    } catch (error) {
-      console.error('Error fetching file:', error)
-      return null
-    }
-  }
+	async getFolderContents(path: string = ''): Promise<GitHubFile[]> {
+		try {
+			const response = await axios.get<GitHubFile[]>(this.apiUrl, {
+				params: {
+					owner: this.owner,
+					repo: this.repo,
+					path: path,
+					ref: 'main',
+					mode: 'tree',
+				},
+			})
+			
+
+			return response.data
+		} catch (error) {
+			console.error('Error fetching folder contents:', error)
+			return []
+		}
+	}
+
+	async getFileContent(path: string): Promise<GitHubFile | null> {
+		try {
+			const response = await axios.get<GitHubFile>(this.apiUrl, {
+				params: {
+					owner: this.owner,
+					repo: this.repo,
+					path,
+					ref: 'main',
+					mode: 'content',
+				},
+			})
+			return response.data
+
+		} catch (error) {
+			console.error('Error fetching file:', error)
+			return null
+		}
+	}
 }
 
 export default GitHubService
