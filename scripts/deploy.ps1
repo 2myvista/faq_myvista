@@ -22,4 +22,7 @@ yc serverless function version create `
   --memory 128m `
   --execution-timeout 3s `
   --source-path $cloudDir `
-  --environment GITHUB_TOKEN=$env:GITHUB_TOKEN
+  --environment GITHUB_TOKEN=$env:GITHUB_TOKEN `
+  1> $null
+
+  Write-Host "Deploy done !!"
