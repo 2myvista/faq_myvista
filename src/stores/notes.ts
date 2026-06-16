@@ -86,9 +86,11 @@ export const useNotesStore = defineStore('notes', () => {
 		return allFiles.value.filter((file) => file.tags.includes(selectedTag.value!))
 	})
 
-	const totalNotes = computed(() => allFiles.value.length)
-	const totalTags = computed(() => allTags.value.length)
-	const tagRegex = /#([\wа-яА-ЯёЁ\/\-\.]+)/gi
+	const totalNotes = computed(() => allFiles.value.length);
+	const totalTags = computed(() => allTags.value.length);
+	const tagRegex = /#([\wа-яА-ЯёЁ\/\-\.]+)/gi;
+	const cTimeRegex = /\*\*Дата создания\*\*:\s*`= dateformat\(this\.file\.ctime.*\)`/
+	const mTimeRegex = /\*\*Последнее изменение\*\*:\s*`= dateformat\(this\.file\.mtime.*\)`/
 
 	// === UTILITY FUNCTIONS ===
 	function parseTags(content: string): string[] {
@@ -136,6 +138,10 @@ export const useNotesStore = defineStore('notes', () => {
 			.trim()
 	}
 
+	function removeDates(content: string): string {
+		return content.replace(cTimeRegex, '').replace(mTimeRegex, '').trim()
+	}
+
 	// === ACTIONS ===
 	async function loadStructure(path: string = ''): Promise<TreeItem[]> {
 		const contents = await githubService.getFolderContents(path)
@@ -162,6 +168,7 @@ export const useNotesStore = defineStore('notes', () => {
 					content = decodeBase64(fileData.content)
 					tags = parseTags(content)
 					content = removeTags(content)
+					content = removeDates(content)
 				}
 
 				const file: FileItem = {

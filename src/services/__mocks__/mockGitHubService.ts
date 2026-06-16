@@ -138,8 +138,8 @@ kubectl logs -f deployment/pim
 	'pim/pgAdmin.md': {
 		content: encodeToBase64(`# Настройка pgAdmin для PIMв
 
-**Последнее изменение**: \`= dateformat(this.file.mtime, "dd.MM.yyyy HH:mm:ss")\`
 **Дата создания**: \`= dateformat(this.file.ctime, "dd.MM.yyyy HH:mm:ss")\`			
+**Последнее изменение**: \`= dateformat(this.file.mtime, "dd.MM.yyyy HH:mm:ss")\`
 
 ## Подключение к базе
 - Host: postgres-service
