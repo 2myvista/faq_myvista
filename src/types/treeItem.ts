@@ -16,7 +16,6 @@ export interface FileItem extends TreeItemBase {
   type: 'file'
   content: string
   tags: string[]
-  rawTags: string[]
   groupedTags: Record<string, Array<{
     full: string
     display: string

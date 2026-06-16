@@ -19,7 +19,7 @@ try {
 		--runtime nodejs22 `
 		--entrypoint index.handler `
 		--memory 128m `
-		--execution-timeout 3s `
+		--execution-timeout 15s `
 		--source-path $cloudDir `
 		--environment GITHUB_TOKEN=$env:GITHUB_TOKEN `
 		2>&1

@@ -88,11 +88,12 @@ export const useNotesStore = defineStore('notes', () => {
 
 	const totalNotes = computed(() => allFiles.value.length)
 	const totalTags = computed(() => allTags.value.length)
+	const tagRegex = /#([\wа-яА-ЯёЁ\/\-\.]+)/gi
 
 	// === UTILITY FUNCTIONS ===
 	function parseTags(content: string): string[] {
 		const tags: string[] = []
-		const tagRegex = /#([\wа-яА-ЯёЁ\/\-\.]+)/gi
+		tagRegex.lastIndex = 0
 
 		let match: RegExpExecArray | null
 		while ((match = tagRegex.exec(content)) !== null) {
@@ -126,6 +127,15 @@ export const useNotesStore = defineStore('notes', () => {
 		return grouped
 	}
 
+	function removeTags(content: string): string {
+		tagRegex.lastIndex = 0
+
+		return content
+			.replace(tagRegex, '')
+			.replace(/[ \t]+$/gm, '')
+			.trim()
+	}
+
 	// === ACTIONS ===
 	async function loadStructure(path: string = ''): Promise<TreeItem[]> {
 		const contents = await githubService.getFolderContents(path)
@@ -151,6 +161,7 @@ export const useNotesStore = defineStore('notes', () => {
 				if (fileData?.content && fileData.encoding === 'base64') {
 					content = decodeBase64(fileData.content)
 					tags = parseTags(content)
+					content = removeTags(content)
 				}
 
 				const file: FileItem = {
@@ -159,7 +170,6 @@ export const useNotesStore = defineStore('notes', () => {
 					path: item.path,
 					content,
 					tags,
-					rawTags: tags,
 					groupedTags: groupTags(tags),
 				}
 
