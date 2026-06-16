@@ -13,7 +13,6 @@ export function GitHubService() {
 	console.log('Using real GitHub service')
 	return new GitHubServiceReal (
 		import.meta.env.VITE_GITHUB_OWNER || '',
-		import.meta.env.VITE_GITHUB_REPO || '',
-		import.meta.env.VITE_GITHUB_TOKEN || null
+		import.meta.env.VITE_GITHUB_REPO || ''
 	)
 }

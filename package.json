@@ -12,15 +12,17 @@
     "type-check": "vue-tsc --build",
     "lint": "eslint . --fix --cache",
     "format": "prettier --write src/",
-    "deploy": "powershell -ExecutionPolicy Bypass -File scripts/deploy.ps1"
+    "deploy": "powershell -ExecutionPolicy Bypass -File scripts/deploy.ps1",
+    "publish": "powershell -ExecutionPolicy Bypass -File scripts/publish.ps1"
   },
   "dependencies": {
+    "axios": "^1.7.9",
     "pinia": "^3.0.4",
-    "vue": "^3.5.26",
-    "axios": "^1.7.9"
+    "vue": "^3.5.26"
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.3",
+    "@types/jsdom": "^28.0.3",
     "@types/node": "^24.10.4",
     "@vitejs/plugin-vue": "^6.0.3",
     "@vitest/eslint-plugin": "^1.6.5",
