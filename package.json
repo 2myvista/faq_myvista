@@ -12,9 +12,8 @@
     "type-check": "vue-tsc --build",
     "lint": "eslint . --fix --cache",
     "format": "prettier --write src/",
-    "deploy": "powershell -ExecutionPolicy Bypass -File scripts/deploy.ps1",
-    "publish": "powershell -ExecutionPolicy Bypass -File scripts/publish.ps1"
-  },
+    "deploy": "powershell -ExecutionPolicy Bypass -File scripts/deploy.ps1"
+    },
   "dependencies": {
     "axios": "^1.7.9",
     "pinia": "^3.0.4",

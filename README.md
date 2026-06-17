@@ -11,40 +11,14 @@ npm run dev
 Приложение будет доступно по адресу:
 
 ```text
-http://localhost:5173
+http://localhost:6573
 ```
 
 ---
 
-## Публикация фронтенда
+## Полный деплой
 
-Собрать и загрузить сайт в Object Storage:
-
-```bash
-npm run publish
-```
-
-Что происходит:
-
-1. Выполняется `npm run build`
-2. Создаётся папка `dist`
-3. Файлы загружаются в бакет:
-
-```text
-notes-viewer-prod
-```
-
-После завершения сайт доступен по адресу:
-
-```text
-https://faq.myvista.ru
-```
-
----
-
-## Деплой Cloud Function
-
-Обновление GitHub Proxy Function:
+Запуск:
 
 ```bash
 npm run deploy
@@ -56,19 +30,52 @@ npm run deploy
 .\scripts\deploy.ps1
 ```
 
-Используется функция:
+### Что делает deploy
+
+1. Проверяет значение `VITE_USE_MOCKS`
+2. Если `VITE_USE_MOCKS=true`, запрашивает подтверждение
+3. Деплоит Cloud Function `notes-viewer`
+4. Деплоит Cloud Function `notes-basic-auth`
+5. Обновляет API Gateway `notes-gateway`
+6. Выполняет `npm run build`
+7. Очищает бакет Object Storage
+8. Загружает `index.html`
+9. Загружает содержимое папки `assets`
+
+После завершения сайт доступен по адресу:
 
 ```text
-notes-viewer
+https://faq.myvista.ru
 ```
 
-Переменные окружения:
+---
+
+## Конфигурация
+
+Используется локальный файл `.env`:
+
+```env
+# Frontend
+VITE_GITHUB_OWNER=2myvista
+VITE_GITHUB_REPO=faq
+VITE_API_URL=https://functions.yandexcloud.net/d4edimpv64rdl91o5pd3
+VITE_USE_MOCKS=false
+
+# Cloud Function: notes-viewer
+GITHUB_TOKEN=github_token
+
+# Cloud Function: notes-basic-auth
+BASIC_USER=myvista
+BASIC_PASSWORD=password
+```
+
+Для репозитория рекомендуется хранить шаблон:
 
 ```text
-GITHUB_TOKEN
+.env.example
 ```
 
-берутся из локального окружения.
+а реальный `.env` добавить в `.gitignore`.
 
 ---
 
@@ -102,10 +109,10 @@ Certificate Manager
 Certificate: faq-myvista
 ```
 
-### Gateway
+### API Gateway
 
 ```text
-API Gateway
+notes-gateway
 ```
 
 Используется Basic Auth через функцию:
@@ -132,34 +139,6 @@ notes-basic-auth
 ```
 
 ---
-
-## Полезные команды
-
-Проверить CLI:
-
-```bash
-yc --version
-```
-
-Проверить текущий профиль:
-
-```bash
-yc config list
-```
-
-Список функций:
-
-```bash
-yc serverless function list
-```
-
-Список бакетов:
-
-```bash
-yc storage bucket list
-```
-
-
 
 ## Serverless
 
@@ -191,7 +170,7 @@ GitHub → Cloud Function → Frontend
 GITHUB_TOKEN
 ```
 
-Деплой:
+Деплой выполняется общим скриптом:
 
 ```powershell
 npm run deploy
@@ -220,6 +199,12 @@ HTTP Basic Authentication
 ```text
 BASIC_USER
 BASIC_PASSWORD
+```
+
+Деплой выполняется общим скриптом:
+
+```powershell
+npm run deploy
 ```
 
 ---
@@ -270,10 +255,24 @@ assets/
 favicon.ico
 ```
 
-Публикация:
+---
 
-```powershell
-npm run publish
+### Структура проекта
+
+```text
+cloud/
+├── notes-basic-auth/
+│   └── index.js
+├── notes-gateway/
+│   └── openapi.yaml
+└── notes-viewer/
+    └── index.js
+
+scripts/
+└── deploy.ps1
+
+.env
+.env.example
 ```
 
 ---
@@ -296,4 +295,38 @@ Vue Application
 notes-viewer
   ↓
 GitHub
+```
+
+---
+
+## Полезные команды
+
+Проверить CLI:
+
+```bash
+yc --version
+```
+
+Проверить текущий профиль:
+
+```bash
+yc config list
+```
+
+Список функций:
+
+```bash
+yc serverless function list
+```
+
+Список бакетов:
+
+```bash
+yc storage bucket list
+```
+
+Список API Gateway:
+
+```bash
+yc serverless api-gateway list
 ```

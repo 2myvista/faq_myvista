@@ -1,0 +1,44 @@
+openapi: 3.0.0
+info:
+  title: notes-viewer
+  version: 1.0.0
+
+servers:
+- url: https://d5drho8k60f3krv2bhef.ccx97b51.apigw.yandexcloud.net
+- url: https://faq.myvista.ru
+paths:
+  /:
+    get:
+      security:
+        - httpBasicAuth: []
+      x-yc-apigateway-integration:
+        type: object_storage
+        bucket: notes-viewer-prod
+        object: index.html
+        service_account_id: aje5icoj6prppphkuoub
+
+  /{file+}:
+    get:
+      security:
+        - httpBasicAuth: []
+      parameters:
+        - name: file
+          in: path
+          required: true
+          schema:
+            type: string
+      x-yc-apigateway-integration:
+        type: object_storage
+        bucket: notes-viewer-prod
+        object: '{file}'
+        error_object: index.html
+        service_account_id: aje5icoj6prppphkuoub
+
+components:
+  securitySchemes:
+    httpBasicAuth:
+      type: http
+      scheme: basic
+      x-yc-apigateway-authorizer:
+        type: function
+        function_id: d4e6cps3d64chp2hergv
