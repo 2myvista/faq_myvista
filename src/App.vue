@@ -29,76 +29,14 @@
 
 			<!-- Правая панель - Список файлов или теги -->
 			<aside class="right-panel" :style="{ width: rightPanelWidth }">
-				<!-- Заголовок панели -->
-				<div class="panel-header">
-					<h3>{{ rightPanelTitle }}</h3>
-				</div>
 
 				<!-- Если ищем по файлам или показываем файлы -->
-				<div v-if="rightPanelMode === 'files'" class="files-panel">
-					<!-- Заголовок с информацией -->
-					<div class="files-header">
-						<div class="filters-info">
-							<span v-if="notesStore.selectedTag" class="filter-badge">
-								Тег: #{{ notesStore.selectedTag }}
-								<button @click="clearTagFilter">×</button>
-							</span>
-							<span v-if="isSearchActive && searchMode === 'files'" class="filter-badge search">
-								Поиск: "{{ searchQuery }}"
-								<button @click="clearSearch">×</button>
-							</span>
-						</div>
-						<div class="files-count">
-							{{ displayedFiles.length }} файлов
-						</div>
-					</div>
-
-					<!-- Список файлов -->
-					<div class="files-list">
-						<div v-if="notesStore.isLoading" class="loading-files">
-							Загрузка...
-						</div>
-
-						<div v-else-if="displayedFiles.length === 0" class="no-files">
-							<template v-if="isSearchActive && searchMode === 'files'">
-								Ничего не найдено по запросу "{{ searchQuery }}"
-							</template>
-							<template v-else-if="notesStore.selectedTag">
-								Нет файлов с тегом #{{ notesStore.selectedTag }}
-							</template>
-							<template v-else>
-								Файлы не найдены
-							</template>
-						</div>
-
-						<div v-else class="files-container">
-							<div v-for="file in displayedFiles" :key="file.path" class="file-card"
-								:class="{ 'selected': isFileSelected(file) }" @click="handleSelectFile(file)">
-								<div class="file-icon">📄</div>
-								<div class="file-info">
-									<div class="file-name">{{ file.name }}</div>
-									<div v-if="file.tags.length" class="file-tags">
-										<span v-for="tag in file.tags.slice(0, 2)" :key="tag" class="file-tag"
-											:title="tag">
-											#{{ tag.split('/').pop() }}
-										</span>
-										<span v-if="file.tags.length > 2" class="more-tags">
-											+{{ file.tags.length - 2 }}
-										</span>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
+				<FileList v-if="rightPanelMode === 'files'" :panelTitle="rightPanelTitle" :isSearchActive="isSearchActive" :searchMode="searchMode" :displayedFiles="displayedFiles" @select-file="handleSelectFile" @clear-tag-filter="clearTagFilter" :searchQuery="searchQuery"/>
 
 				<!-- Если ищем по тегам или показываем теги -->
-				<div v-else class="tags-panel">
-					<TagCloud :isSearchActive="isSearchActive" :searchMode="searchMode" :searchTagsResults="searchTagsResults" @select-tag="handleSelectTag" />
-
-
-
-				</div>
+				
+				<TagCloud v-else :isSearchActive="isSearchActive" :panelTitle="rightPanelTitle" :searchMode="searchMode" :searchTagsResults="searchTagsResults" @select-tag="handleSelectTag" @select-file="handleSelectFile" />
+				
 			</aside>
 		</main>
 
@@ -116,6 +54,7 @@ import FolderTree from './components/FolderTree.vue'
 import FooterBlock from './components/FooterBlock.vue'
 import FilePreview from "./components/FilePreview.vue";
 import TagCloud from "./components/TagCloud.vue";
+import FileList from "./components/FileList.vue";
 
 // === 1. ИНИЦИАЛИЗАЦИЯ STORE ===
 const notesStore = useNotesStore()
@@ -139,11 +78,15 @@ const rightPanelWidth = computed(() => {
 
 const rightPanelTitle = computed(() => {
 	if (rightPanelMode.value === 'files') {
-		if (isSearchActive.value && searchMode.value === 'files') return `Поиск файлов: "${searchQuery.value}"`
-		if (notesStore.selectedTag) return `Тег: #${notesStore.selectedTag}`
+		if (isSearchActive.value && searchMode.value === 'files') return `Поиск в файлах: "${searchQuery.value}"`
 		return 'Все файлы'
 	}
-	return 'Теги'
+	else {
+		if (isSearchActive.value && searchMode.value === 'tags') return `Поиск тегов: #${searchQuery.value}`
+		return 'Все теги'
+
+	}
+	//return `Поиск тегов: #${searchQuery.value}`
 })
 
 function handleSearch(query: string, mode: 'files' | 'tags'): void {
@@ -178,19 +121,80 @@ function handleSetSearchMode(mode: 'files' | 'tags'): void {
 	setSearchMode(mode)
 }
 
+function handleSelectFile(file: FileItem): void {
+	selectedFile.value = file
+	notesStore.selectItem(file)
+}
+
 // Активен ли поиск
 const isSearchActive = computed(() => {
 	return !!searchQuery.value.trim()
 })
 
-// Результаты поиска тегов
+const highlightTag = (tag: string, query: string) => {
+	const index = tag.toLowerCase().indexOf(query)
+
+	if (index === -1) {
+		return {
+			raw: tag,
+			html: tag
+		}
+	}
+
+	return {
+		raw: tag,
+		html:
+			tag.slice(0, index) +
+			'<span>[' +
+			tag.slice(index, index + query.length) +
+			']</span>' +
+			tag.slice(index + query.length)
+	}
+}
+
 const searchTagsResults = computed(() => {
-	if (!isSearchActive.value || searchMode.value !== 'tags') return []
+	if (!isSearchActive.value || searchMode.value !== 'tags') {
+		return []
+	}
 
 	const query = searchQuery.value.toLowerCase().trim()
-	return notesStore.allTags.filter(tag =>
+
+	if (!query) {
+		return []
+	}
+
+	// найденные теги
+	const matchedTags = notesStore.allTags.filter(tag =>
 		tag.toLowerCase().includes(query)
 	)
+
+	// найденные файлы без дублей
+	const files = [
+		...new Map(
+			matchedTags.flatMap(tag =>
+				notesStore.allFiles
+					.filter(file => file.tags.includes(tag))
+					.map(file => [file.path, file])
+			)
+		).values()
+	]
+
+	return files.map(file => ({
+		...file,
+		displayTags: file.tags
+			.filter(tag => tag.toLowerCase().includes(query))
+			.sort((a, b) => {
+				const aIndex = a.toLowerCase().indexOf(query)
+				const bIndex = b.toLowerCase().indexOf(query)
+
+				if (aIndex !== bIndex) {
+					return aIndex - bIndex
+				}
+
+				return a.length - b.length
+			})
+			.map(tag => highlightTag(tag, query))
+	}))
 })
 
 // Результаты поиска файлов
@@ -218,23 +222,24 @@ const searchFilesResults = computed(() => {
 
 		return false
 	})
-})
+}) 
 
 // Отображаемые файлы (с учетом фильтров)
-const displayedFiles = computed(() => {
+  const displayedFiles = computed(() => {
 	// Если активен поиск по файлам
 	if (isSearchActive.value && searchMode.value === 'files') {
 		return searchFilesResults.value
 	}
 
 	// Если выбран тег
-	if (notesStore.selectedTag) {
+	  if (notesStore.selectedTag) {
+		//debugger
 		return notesStore.filteredFiles
 	}
 
 	// Все файлы
 	return notesStore.allFiles
-})
+}) 
 
 // === 4. ЖИЗНЕННЫЙ ЦИКЛ ===
 onMounted(async () => {
@@ -284,11 +289,6 @@ function handleCloseFile(): void {
 	console.log('сбрасываем выбранность файла  в handleCloseFile');
 }
 
-function handleSelectFile(file: FileItem): void {
-	selectedFile.value = file
-	notesStore.selectItem(file)
-}
-
 function handleSelectTag(tag: string): void {
 	notesStore.selectTag(tag)
 	rightPanelMode.value = 'files'
@@ -323,12 +323,6 @@ function setSearchMode(mode: 'files' | 'tags'): void {
 		rightPanelMode.value = mode
 	}
 }
-
-function isFileSelected(file: FileItem): boolean {
-	return notesStore.currentItem?.path === file.path
-}
-
-
 </script>
 
 <style scoped>
@@ -337,110 +331,6 @@ function isFileSelected(file: FileItem): boolean {
 	display: flex;
 	flex-direction: column;
 	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-/* Контейнер для поиска и вкладок */
-.search-tabs-container {
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-	background: white;
-	border-radius: 4px;
-	padding: 0.25rem;
-	min-width: 400px;
-}
-
-/* Поиск */
-.search-box {
-	display: flex;
-	align-items: center;
-	flex: 1;
-	min-width: 200px;
-}
-
-.search-box input {
-	flex: 1;
-	padding: 0.5rem 0.75rem;
-	border: none;
-	outline: none;
-	font-size: 0.9rem;
-	color: #333;
-	background: transparent;
-}
-
-.search-box input::placeholder {
-	color: #999;
-}
-
-.search-btn,
-.clear-search {
-	padding: 0.5rem 0.75rem;
-	border: none;
-	background: transparent;
-	cursor: pointer;
-	color: #666;
-	transition: color 0.2s;
-}
-
-.search-btn:hover:not(:disabled) {
-	color: #3498db;
-}
-
-.search-btn:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
-.clear-search:hover {
-	color: #e74c3c;
-}
-
-/* Вкладки поиска */
-.search-tabs {
-	display: flex;
-	gap: 0.125rem;
-	background: #e9ecef;
-	border-radius: 3px;
-	padding: 0.125rem;
-}
-
-.search-tab {
-	padding: 0.5rem 0.75rem;
-	border: none;
-	background: transparent;
-	border-radius: 2px;
-	cursor: pointer;
-	font-size: 0.9rem;
-	color: #6c757d;
-	transition: all 0.2s;
-}
-
-.search-tab:hover {
-	background: rgba(255, 255, 255, 0.5);
-}
-
-.search-tab.active {
-	background: #3498db;
-	color: white;
-}
-
-.refresh-btn {
-	padding: 0.5rem;
-	border: none;
-	background: rgba(255, 255, 255, 0.1);
-	color: white;
-	border-radius: 4px;
-	cursor: pointer;
-	transition: background-color 0.2s;
-}
-
-.refresh-btn:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
-.refresh-btn:hover:not(:disabled) {
-	background: rgba(255, 255, 255, 0.2);
 }
 
 /* Основной контент */
@@ -507,178 +397,6 @@ function isFileSelected(file: FileItem): boolean {
 	border-left: 1px solid #dee2e6;
 	overflow-y: auto;
 	transition: width 0.3s ease;
-}
-
-.panel-header {
-	padding: 1rem;
-	border-bottom: 1px solid #dee2e6;
-	background: #f0f1f1;
-	height: 35px;
-}
-
-.panel-header h3 {
-	margin: 0 0 0.5rem 0;
-	font-size: 1rem;
-	color: #2c3e50;
-}
-
-.panel-tabs {
-	display: flex;
-	gap: 0.25rem;
-}
-
-.panel-tabs button {
-	padding: 0.5rem 1rem;
-	border: none;
-	background: #e9ecef;
-	border-radius: 4px;
-	cursor: pointer;
-	font-size: 0.9rem;
-	color: #6c757d;
-}
-
-.panel-tabs button:hover {
-	background: #dee2e6;
-}
-
-.panel-tabs button.active {
-	background: #3498db;
-	color: white;
-}
-
-/* Панель файлов */
-.files-panel {
-	display: flex;
-	flex-direction: column;
-	height: calc(100vh - 150px);
-}
-
-.files-header {
-	padding: 1rem;
-	border-bottom: 1px solid #dee2e6;
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-}
-
-.filters-info {
-	display: flex;
-	gap: 0.5rem;
-}
-
-.filter-badge {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.25rem;
-	padding: 0.25rem 0.5rem;
-	background: #e3f2fd;
-	border: 1px solid #bbdefb;
-	border-radius: 4px;
-	font-size: 0.85rem;
-	color: #1976d2;
-}
-
-.filter-badge.search {
-	background: #f3e5f5;
-	border-color: #e1bee7;
-	color: #7b1fa2;
-}
-
-.filter-badge button {
-	padding: 0 0.25rem;
-	border: none;
-	background: transparent;
-	cursor: pointer;
-	color: inherit;
-	font-size: 1rem;
-	line-height: 1;
-}
-
-.files-count {
-	font-size: 0.9rem;
-	color: #6c757d;
-}
-
-.files-list {
-	flex: 1;
-	overflow-y: auto;
-}
-
-.loading-files,
-.no-files {
-	padding: 2rem;
-	text-align: center;
-	color: #6c757d;
-}
-
-.files-container {
-	padding: 0.5rem;
-}
-
-.file-card {
-	padding: 0.75rem;
-	border: 1px solid #dee2e6;
-	border-radius: 6px;
-	margin-bottom: 0.5rem;
-	cursor: pointer;
-	display: flex;
-	gap: 0.75rem;
-	transition: all 0.2s;
-}
-
-.file-card:hover {
-	background: #f8f9fa;
-	border-color: #3498db;
-}
-
-.file-card.selected {
-	background: #e3f2fd;
-	border-color: #3498db;
-}
-
-.file-icon {
-	font-size: 20px;
-}
-
-.file-info {
-	flex: 1;
-	min-width: 0;
-}
-
-.file-name {
-	font-weight: 600;
-	font-size: 0.9rem;
-	margin-bottom: 0.25rem;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.file-tags {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.25rem;
-}
-
-.file-tag {
-	font-size: 0.7rem;
-	padding: 0.125rem 0.375rem;
-	background: #e9ecef;
-	color: #495057;
-	border-radius: 10px;
-}
-
-.more-tags {
-	font-size: 0.7rem;
-	color: #6c757d;
-	align-self: center;
-}
-
-/* Панель теги */
-.tags-panel {
-	padding: 1rem;
-	overflow-y: auto;
-	height: calc(100vh - 150px);
 }
 
 </style>

@@ -141,6 +141,7 @@ kubectl logs -f deployment/pim
 **Дата создания**: \`= dateformat(this.file.ctime, "dd.MM.yyyy HH:mm:ss")\`			
 **Последнее изменение**: \`= dateformat(this.file.mtime, "dd.MM.yyyy HH:mm:ss")\`
 
+[[pim/вставить код]]
 ## Подключение к базе
 - Host: postgres-service
 - Port: 5432
@@ -168,7 +169,7 @@ git reflog --date=format:'%d-%m-%Y' | grep "checkout: moving" | head -20
 \`\`\`
 
 
-#git/движение #git/reflog #git/история #git/log #admin`),
+#git/движение #git/reflog #git/история #git/log #admin #devops/kubernetes`),
 		encoding: 'base64',
 		sha: 'git-reflog-005',
 	},

@@ -36,16 +36,6 @@
 				</span>
 			</div>
 
-			<!-- Группированные теги -->
-			<!-- <div v-for="(groupTags, groupName) in selectedFile.groupedTags" :key="groupName" class="tag-group">
-				<h4>{{ groupName }}:</h4>
-				<div class="group-tags">
-					<span v-for="tag in groupTags" :key="tag.full" class="group-tag" @click="emit('tag-click', tag.full)"
-						:title="tag.full">
-						{{ tag.display }}
-					</span>
-				</div>
-			</div> -->
 		</div>
 
 	</div>

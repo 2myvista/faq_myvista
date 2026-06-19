@@ -13,14 +13,23 @@ export interface FolderItem extends TreeItemBase {
 }
 
 export interface FileItem extends TreeItemBase {
-  type: 'file'
-  content: string
-  tags: string[]
-  groupedTags: Record<string, Array<{
-    full: string
-    display: string
-    language?: 'ru' | 'en'
-  }>>
+	type: 'file'
+	content: string
+	tags: string[]
+	displayTags: DisplayTag[]
+	groupedTags: Record<
+		string,
+		Array<{
+			full: string
+			display: string
+			language?: 'ru' | 'en'
+		}>
+	>
+}
+
+export interface DisplayTag {
+	raw: string
+	html: string
 }
 
 export type TreeItem = FolderItem | FileItem

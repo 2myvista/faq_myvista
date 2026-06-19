@@ -177,6 +177,7 @@ export const useNotesStore = defineStore('notes', () => {
 					path: item.path,
 					content,
 					tags,
+					displayTags: [],
 					groupedTags: groupTags(tags),
 				}
 
