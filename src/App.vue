@@ -11,9 +11,9 @@
 			@set-search-mode="handleSetSearchMode" />
 	
 		<!-- Основной контент -->
-		<main class="app-main">
+		<main class="app-main split-container" ref="containerRef">
 			<!-- Левая панель - Дерево папок -->
-			<aside class="sidebar" :style="{ width: sidebarWidth }">
+			<aside class="sidebar left-panel" :style="{ width: sidebarWidth + '%' }">
 				<div class="sidebar-section">
 					<div class="sidebar-header">
 						<h3>Заметки</h3>
@@ -21,23 +21,25 @@
 					<FolderTree v-if="!notesStore.isLoading" :items="notesStore.tree" @select-item="handleSelectItem" />
 				</div>
 			</aside>
+			<div class="splitter" @mousedown="startResizing" @touchstart="startResizing"><div class="splitter-handle"></div></div>
+			<div class="right-pane">
+				<!-- Центральная панель - Основной контент -->
+				<section class="main-content">
+					<FilePreview :selectedFile="selectedFile" :isLoading="notesStore.isLoading" @close-file="handleCloseFile()" @tag-click="handleSelectTag" />
+				</section>
 
-			<!-- Центральная панель - Основной контент -->
-			<section class="main-content">
-				<FilePreview :selectedFile="selectedFile" :isLoading="notesStore.isLoading" @close-file="handleCloseFile()" @tag-click="handleSelectTag" />
-			</section>
+				<!-- Правая панель - Список файлов или теги -->
+				<aside class="right-panel" :style="{ width: rightPanelWidth }">
 
-			<!-- Правая панель - Список файлов или теги -->
-			<aside class="right-panel" :style="{ width: rightPanelWidth }">
+					<!-- Если ищем по файлам или показываем файлы -->
+					<FileList v-if="rightPanelMode === 'files'" :panelTitle="rightPanelTitle" :isSearchActive="isSearchActive" :searchMode="searchMode" :displayedFiles="displayedFiles" @select-file="handleSelectFile" @clear-tag-filter="clearTagFilter" :searchQuery="searchQuery"/>
 
-				<!-- Если ищем по файлам или показываем файлы -->
-				<FileList v-if="rightPanelMode === 'files'" :panelTitle="rightPanelTitle" :isSearchActive="isSearchActive" :searchMode="searchMode" :displayedFiles="displayedFiles" @select-file="handleSelectFile" @clear-tag-filter="clearTagFilter" :searchQuery="searchQuery"/>
-
-				<!-- Если ищем по тегам или показываем теги -->
-				
-				<TagCloud v-else :isSearchActive="isSearchActive" :panelTitle="rightPanelTitle" :searchMode="searchMode" :searchTagsResults="searchTagsResults" @select-tag="handleSelectTag" @select-file="handleSelectFile" />
-				
-			</aside>
+					<!-- Если ищем по тегам или показываем теги -->
+					
+					<TagCloud v-else :isSearchActive="isSearchActive" :panelTitle="rightPanelTitle" :searchMode="searchMode" :searchTagsResults="searchTagsResults" @select-tag="handleSelectTag" @select-file="handleSelectFile" />
+					
+				</aside>
+			</div>
 		</main>
 
 		<!-- Статусная строка -->
@@ -46,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, type Ref } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, type Ref} from 'vue'
 import { useNotesStore } from './stores/notes'
 import type { TreeItem, FileItem } from './types/treeItem'
 import HeaderBlock from './components/HeaderBlock.vue'
@@ -67,10 +69,47 @@ const rightPanelMode = ref<'files' | 'tags'>('files')
 const searchMode = ref<'files' | 'tags'>('files') // Режим поиска (файлы/теги)
 const searchInput = ref<HTMLInputElement | null>(null)
 
+// splitter	
+	const containerRef = ref<HTMLDivElement | null>(null)
+	const isResizing = ref(false)
+	const DEFAULT_WIDTH = 20
+	const sidebarWidth = ref(DEFAULT_WIDTH) // Ширина левой панели в процентах
+	
+	const startResizing = (e: MouseEvent | TouchEvent) => {
+		e.preventDefault()
+		isResizing.value = true
+	}
+
+	const stopResizing = () => {
+		isResizing.value = false
+	}
+
+	const handleResizing = (e: MouseEvent | TouchEvent) => {
+		if (!isResizing.value || !containerRef.value) return
+
+		let clientX: number
+
+		if ('touches' in e) {
+			if (!e.touches.length) return
+			clientX = e.touches[0]!.clientX
+		} else {
+			clientX = e.clientX
+		}
+
+		const rect = containerRef.value.getBoundingClientRect()
+		const newSidebarWidth = ((clientX - rect.left) / rect.width) * 100
+
+		if (newSidebarWidth < 10) {
+			sidebarWidth.value = 10
+		} else if (newSidebarWidth > 50) {
+			sidebarWidth.value = 50
+		} else {
+			sidebarWidth.value = newSidebarWidth
+		}
+	}
+// /splitter
+
 // === 3. COMPUTED СВОЙСТВА ===
-const sidebarWidth = computed(() => {
-	return selectedFile.value ? '250px' : '300px'
-})
 
 const rightPanelWidth = computed(() => {
 	return selectedFile.value ? '30%' : '50%'
@@ -252,6 +291,18 @@ onMounted(async () => {
 			searchInput.value.focus()
 		}
 	})
+
+	window.addEventListener('mousemove', handleResizing)
+	window.addEventListener('mouseup', stopResizing)
+	/* window.addEventListener('touchmove', handleResizing)
+	window.addEventListener('touchend', stopResizing) */
+})
+
+onUnmounted (() => {
+	window.removeEventListener('mousemove', handleResizing)
+	window.removeEventListener('mouseup', stopResizing)
+	/* window.removeEventListener('touchmove', handleResizing)
+	window.removeEventListener('touchend', stopResizing) */
 })
 
 // === 5. МЕТОДЫ ===
@@ -346,7 +397,7 @@ function setSearchMode(mode: 'files' | 'tags'): void {
 	background: white;
 	border-right: 1px solid #dee2e6;
 	overflow-y: auto;
-	transition: width 0.3s ease;
+	transition: none;
 }
 
 .sidebar-section {
@@ -399,4 +450,23 @@ function setSearchMode(mode: 'files' | 'tags'): void {
 	transition: width 0.3s ease;
 }
 
+/* splitter */
+.splitter {
+	width: 2px;
+	cursor: col-resize;
+	background: #f0f1f1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.splitter:hover,
+.splitter.is-dragging {
+	background: #2c3e50;
+}
+
+.right-pane {
+	display: flex;
+	flex: 1;
+	overflow: hidden;
+}
 </style>
